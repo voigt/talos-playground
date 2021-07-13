@@ -51,3 +51,9 @@ $ talosctl --talosconfig talosconfig config node $firstcp
 $ talosctl --talosconfig talosconfig -n $firstcp get bs
 $ talosctl --talosconfig talosconfig bootstrap
 ```
+
+Retrieve kubeconfig
+
+```
+$ talosctl --talosconfig talosconfig kubeconfig .
+```

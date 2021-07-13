@@ -1,0 +1,3 @@
+name: talos
+runtime: go
+description: talos cluster build with pulumi
