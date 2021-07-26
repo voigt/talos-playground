@@ -219,6 +219,8 @@ github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084 h1:sofwID9zm4tzr
 github.com/prometheus/procfs v0.0.0-20190507164030-5867b95ac084/go.mod h1:TjEm7ze935MbeOT/UhFTIMYKhuLP4wbCsTZCD3I8kEA=
 github.com/prometheus/tsdb v0.7.1 h1:YZcsG11NqnK4czYLrWd9mpEuAJIHVQLwdrleYfszMAA=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
+github.com/pulumi/pulumi-cloudflare/sdk/v3 v3.3.0 h1:IWqmWB/xtwvHO+o2ASuQjXAzpt9MpqDp7XV4gVlEZUQ=
+github.com/pulumi/pulumi-cloudflare/sdk/v3 v3.3.0/go.mod h1:IWSpui5lZYoJKJkFybNwt4qh3FcuipjGfWvrsordFmY=
 github.com/pulumi/pulumi-digitalocean/sdk/v4 v4.4.1 h1:FJ4m4hoNlwQebzds8N9BYGA7ZZ+ZreDTxBRRZBpx6gE=
 github.com/pulumi/pulumi-digitalocean/sdk/v4 v4.4.1/go.mod h1:CB+T9u0N6LzijlGXNz1FRy4V5Ktxm75iHsbzpwOH5sI=
 github.com/pulumi/pulumi/sdk/v3 v3.3.1/go.mod h1:GBHyQ7awNQSRmiKp/p8kIKrGrMOZeA/k2czoM/GOqds=
