@@ -15,3 +15,4 @@ controlplane.yaml
 join.yaml
 talosconfig
 kubeconfig
+tmp
