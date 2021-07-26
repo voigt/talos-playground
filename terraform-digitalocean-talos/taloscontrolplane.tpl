@@ -90,7 +90,7 @@ cluster:
   controllerManager:
     image: k8s.gcr.io/kube-controller-manager-${tf_host_arch}:${tf_kube_version} # The container image used in the controller manager manifest.
 %{else ~}
-  ontrollerManager: {}
+  controllerManager: {}
 %{endif ~}
 
   # Kube-proxy server-specific configuration options
