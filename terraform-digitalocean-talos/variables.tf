@@ -121,24 +121,24 @@
 #   }
 # }
 
-# variable "conf_dir" {
-#   description = "The directory used for storing Talos ISO and cluster build configuration files (default is /tmp)"
-#   type        = string
-#   default     = "/tmp"
+variable "conf_dir" {
+  description = "The directory used for storing Talos ISO and cluster build configuration files (default is /tmp)"
+  type        = string
+  default     = "/tmp"
 
-#   validation {
-#     condition     = var.conf_dir != ""
-#     error_message = "The Talos configuration directory must be identified."
-#   }
-# }
+  validation {
+    condition     = var.conf_dir != ""
+    error_message = "The Talos configuration directory must be identified."
+  }
+}
 
-# variable "shell" {
-#   description = "The qualified name of preferred shell (e.g. /bin/bash, /bin/zsh, /bin/sh...), to minimize risk of incompatibility (default is /bin/bash)"
-#   type        = string
-#   default     = "/bin/bash"
+variable "shell" {
+  description = "The qualified name of preferred shell (e.g. /bin/bash, /bin/zsh, /bin/sh...), to minimize risk of incompatibility (default is /bin/bash)"
+  type        = string
+  default     = "/bin/bash"
 
-#   validation {
-#     condition     = var.shell != ""
-#     error_message = "The shell, for exection of scripts, must be identified."
-#   }
-# }
+  validation {
+    condition     = var.shell != ""
+    error_message = "The shell, for exection of scripts, must be identified."
+  }
+}
