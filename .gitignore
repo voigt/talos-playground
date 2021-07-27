@@ -16,3 +16,4 @@ join.yaml
 talosconfig
 kubeconfig
 tmp
+.DS_Store
