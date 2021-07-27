@@ -1,23 +1,15 @@
 locals {
-#   talos_nodes = length(var.worker_nodes) > 0 ? concat(var.controlplane_nodes, var.worker_nodes) : var.controlplane_nodes
-#   # Terraform creates the VMs in parallel, and as a result, the order of returned VMs and IPs could be different from the input lists; so match IPs to input VM names
-#   talos_ips = length(var.worker_nodes) > 0 ? concat([for v in var.controlplane_nodes : module.controlplane_vms[v].vm_ip], [for v in var.worker_nodes : module.worker_vms[v].vm_ip]) : [for v in var.controlplane_nodes : module.controlplane_vms[v].vm_ip]
-
-#   controlplane_extrahosts = [
-#     for i in range(length(var.controlplane_nodes)) : [
-#       local.talos_ips[i],
-#       format("%s.%s", var.controlplane_nodes[i], var.dns_domain)
-#     ]
-#   ]
-
-#   worker_extrahosts = [
-#     for i in range(length(var.worker_nodes)) : [
-#       local.talos_ips[length(var.controlplane_nodes) + i],
-#       format("%s.%s", var.worker_nodes[i], var.dns_domain)
-#     ]
-#   ]
-
   scripts_dir = "${path.module}/scripts"
+}
+
+locals {
+#   talos_nodes = length(var.worker_nodes) > 0 ? concat(var.controlplane_nodes, var.worker_nodes) : var.controlplane_nodes
+  talos_nodes = module.controlplane_vms
+  # Terraform creates the VMs in parallel, and as a result, the order of returned VMs and IPs could be different from the input lists; so match IPs to input VM names
+#   talos_ips = length(var.worker_nodes) > 0 ? concat([for v in var.controlplane_nodes : module.controlplane_vms[v].vm_ip], [for v in var.worker_nodes : module.worker_vms[v].vm_ip]) : [for v in var.controlplane_nodes : module.controlplane_vms[v].vm_ip]
+  talos_ips = [for i, v in module.controlplane_vms : module.controlplane_vms[i].ipv4_address]
+
+  depends_on = [module.controlplane_vms]
 }
 
 data "external" "talos_certificates" {
@@ -47,153 +39,92 @@ resource "random_string" "random_key" {
   length = 32
 }
 
-# Launch the VirtualBox VMs, used for Talos cluster control plane nodes
-# module "controlplane_vms" {
-#   for_each = toset(var.controlplane_nodes)
+# TODO: Launch Control-Plane
+module "controlplane_vms" {
+  source = "./modules/control_plane"
 
-#   vm_name            = each.key
-#   vm_specs           = var.controlplane_specs
-#   os_iso             = "${abspath(var.conf_dir)}/talos.iso"
-#   ip_assignment_wait = var.ip_assignment_wait
-#   mac_address_prefix = var.mac_address_prefix
-#   bridge_adapter     = module.talos_network.bridge_adapter
-#   hostonly_network   = module.talos_network.hostonly_network["name"]
-#   host_dns_access    = var.host_dns_access
-#   chipset            = var.chipset
-#   vm_frontend_style  = var.vm_frontend_style
-#   boottime_config    = var.boottime_config
-#   vbox_group         = var.vbox_group
-#   vm_description     = var.vm_description
-#   admin_password     = var.admin_password
-#   node_fqdn          = format("%s.%s", each.key, var.dns_domain)
-#   shell              = var.shell
-#   node_alias         = format("%s.%s", var.kube_cluster_name, var.dns_domain)
-#   #node_alias         = index(var.controlplane_nodes, each.key) == 0 ? format("%s.%s", var.kube_cluster_name, var.dns_domain) : ""
+  count = var.controlplane_nodes
 
-#   source = "./modules/vbox-vm"
+  index = count.index
+  instance_size   = var.controlplane_instance_size
+  talos_image_id  = var.talos_image_id
+  region = var.region
+  # controlplane_config = "${file("${abspath(var.conf_dir)}/controlplane.yaml")}"
+  controlplane_config = "${file("/Users/cvoigt/git/github/voigt/talos/terraform-digitalocean-talos/tmp/controlplane.yaml")}"
+  ssh_keys = var.ssh_keys
 
-#   depends_on = [module.talos_network]
-# }
+  depends_on = [local_file.controlplane_config]
 
+  # TODO: Tags
+  #tags = ["control-plane", "master", "reply", "test", "talos"]
+}
 
-# module "worker_vms" {
-#   for_each = toset(var.worker_nodes)
-
-#   vm_name            = each.key
-#   vm_specs           = var.worker_specs
-#   os_iso             = "${abspath(var.conf_dir)}/talos.iso"
-#   ip_assignment_wait = var.ip_assignment_wait
-#   mac_address_prefix = var.mac_address_prefix
-#   bridge_adapter     = module.talos_network.bridge_adapter
-#   hostonly_network   = module.talos_network.hostonly_network["name"]
-#   host_dns_access    = var.host_dns_access
-#   chipset            = var.chipset
-#   vm_frontend_style  = var.vm_frontend_style
-#   boottime_config    = var.boottime_config
-#   vbox_group         = var.vbox_group
-#   vm_description     = var.vm_description
-#   admin_password     = var.admin_password
-#   node_fqdn          = format("%s.%s", each.key, var.dns_domain)
-#   shell              = var.shell
-#   node_alias         = ""
-
-#   source = "./modules/vbox-vm"
-
-#   # The dependency on controlplane_vms module is not necessary, but makes Ip assignments clearer
-#   depends_on = [module.talos_network, module.controlplane_vms]
-# }
+# TODO: Launch Workers
 
 # Generate the talosconfig file
 resource "local_file" "talosconfig" {
   content = templatefile("${path.module}/talosconfig.tpl", {
     tf_cluster_name    = var.kube_cluster_name
-    tf_endpoints       = slice(local.talos_ips, 0, length(var.controlplane_nodes))
+    tf_endpoints       = slice(local.talos_ips, 0, length(module.controlplane_vms))
     tf_talos_ca_crt    = data.external.talos_certificates.result.talos_crt
     tf_talos_admin_crt = data.external.talos_certificates.result.admin_crt
     tf_talos_admin_key = data.external.talos_certificates.result.admin_key
   })
   filename = "${abspath(var.conf_dir)}/talosconfig"
 
-  depends_on = [data.external.talos_certificates]
+  depends_on = [module.controlplane_vms, data.external.talos_certificates]
 }
 
 # # Generate the Talos controlplane.yaml files
-# resource "local_file" "controlplane_config" {
-#   for_each = toset(var.controlplane_nodes)
+resource "local_file" "controlplane_config" {
 
-#   content = templatefile("${path.module}/taloscontrolplane.tpl", {
-#     tf_talos_token      = format("%s.%s", substr(random_string.random_token[0].result, 7, 6), substr(random_string.random_token[0].result, 17, 16))
-#     tf_type             = index(var.controlplane_nodes, each.key) == 0 ? "init" : "controlplane"
-#     tf_talos_ca_crt     = data.external.talos_certificates.result.talos_crt
-#     tf_talos_ca_key     = data.external.talos_certificates.result.talos_key
-#     tf_host_arch        = data.external.talos_certificates.result.host_arch
-#     tf_kube_version     = var.kube_version
-#     tf_hostname         = each.key
-#     tf_node_fqdn        = format("%s.%s", each.key, var.dns_domain)
-#     tf_cp_extrahosts    = local.controlplane_extrahosts # find solution
-#     tf_wk_extrahosts    = local.worker_extrahosts       # find solution
-#     tf_talos_version    = var.talos_version
-#     tf_cluster_endpoint = format("%s.%s", var.kube_cluster_name, var.dns_domain)
-#     tf_cluster_name     = var.kube_cluster_name
-#     tf_kube_dns_domain  = var.kube_dns_domain
-#     tf_kube_token       = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
-#     tf_kube_enc_key     = base64encode(random_string.random_key[0].result)
-#     tf_kube_ca_crt      = data.external.talos_certificates.result.kube_crt
-#     tf_kube_ca_key      = data.external.talos_certificates.result.kube_key
-#     tf_etcd_ca_crt      = data.external.talos_certificates.result.etcd_crt
-#     tf_etcd_ca_key      = data.external.talos_certificates.result.etcd_key
-#     tf_allow_scheduling = var.controlplane_scheduling
-#   })
-#   filename = "${abspath(var.conf_dir)}/${each.key}.yaml"
+  content = templatefile("${path.module}/taloscontrolplane.tpl", {
+    tf_talos_token      = format("%s.%s", substr(random_string.random_token[0].result, 7, 6), substr(random_string.random_token[0].result, 17, 16))
+    tf_type             = "controlplane"
+    tf_talos_ca_crt     = data.external.talos_certificates.result.talos_crt
+    tf_talos_ca_key     = data.external.talos_certificates.result.talos_key
+    tf_host_arch        = data.external.talos_certificates.result.host_arch
+    tf_kube_version     = var.kube_version
+    tf_talos_version    = var.talos_version
+    tf_cluster_endpoint = format("%s.%s", var.kube_cluster_name, var.dns_domain)
+    tf_cluster_name     = var.kube_cluster_name
+    tf_kube_dns_domain  = var.kube_dns_domain
+    tf_kube_token       = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
+    tf_kube_enc_key     = base64encode(random_string.random_key[0].result)
+    tf_kube_ca_crt      = data.external.talos_certificates.result.kube_crt
+    tf_kube_ca_key      = data.external.talos_certificates.result.kube_key
+    tf_etcd_ca_crt      = data.external.talos_certificates.result.etcd_crt
+    tf_etcd_ca_key      = data.external.talos_certificates.result.etcd_key
+    tf_allow_scheduling = var.controlplane_scheduling
+  })
+  filename = "${abspath(var.conf_dir)}/controlplane.yaml"
 
-# #   depends_on = [module.controlplane_vms, data.external.talos_certificates, random_string.random_token, random_string.random_key]
-#   depends_on = [data.external.talos_certificates, random_string.random_token, random_string.random_key]
-# }
+  depends_on = [data.external.talos_certificates, random_string.random_token, random_string.random_key]
+}
 
 # Generate the Talos worker.yaml files
-# resource "local_file" "worker_config" {
-#   for_each = toset(var.worker_nodes)
-
-#   content = templatefile("${path.module}/talosworker.tpl", {
-#     tf_talos_token      = format("%s.%s", substr(random_string.random_token[0].result, 7, 6), substr(random_string.random_token[0].result, 17, 16))
-#     tf_type             = "worker"
-#     tf_host_arch        = data.external.talos_certificates.result.host_arch
-#     tf_kube_version     = var.kube_version
-#     tf_hostname         = each.key
-#     tf_node_fqdn        = format("%s.%s", each.key, var.dns_domain)
-#     tf_cp_extrahosts    = local.controlplane_extrahosts
-#     tf_wk_extrahosts    = local.worker_extrahosts
-#     tf_talos_version    = var.talos_version
-#     tf_cluster_endpoint = format("%s.%s", var.kube_cluster_name, var.dns_domain)
-#     tf_kube_dns_domain  = var.kube_dns_domain
-#     tf_kube_token       = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
-#     tf_kube_ca_crt      = data.external.talos_certificates.result.kube_crt
-#   })
-#   filename = "${abspath(var.conf_dir)}/${each.key}.yaml"
-
-#   depends_on = [module.controlplane_vms, module.worker_vms, data.external.talos_certificates, random_string.random_token]
-# }
 
 # Provide the Talos configuration yaml files, to the newly booted up VirtualBox VMs
-# resource "null_resource" "os_install" {
-#   count = length(local.talos_nodes)
+resource "null_resource" "os_install" {
+  count = length(local.talos_nodes)
 
-#   provisioner "local-exec" {
-#     interpreter = [var.shell, "-c"]
-#     command     = <<-EOT
-#       sleep $APPLY_PAUSE
-#       talosctl apply-config --insecure --nodes $NODE_IP --file $NODE_CONFIG
-#     EOT
+  provisioner "local-exec" {
+    interpreter = [var.shell, "-c"]
+    command     = <<-EOT
+      sleep $APPLY_PAUSE && \
+      talosctl apply-config --insecure --nodes $NODE_IP --file $NODE_CONFIG
+    EOT
 
-#     environment = {
-#       APPLY_PAUSE = var.apply_config_wait * count.index
-#       NODE_IP     = local.talos_ips[count.index]
-#       NODE_CONFIG = "${abspath(var.conf_dir)}/${local.talos_nodes[count.index]}.yaml"
-#     }
-#   }
+    environment = {
+      APPLY_PAUSE = var.apply_config_wait * count.index
+      NODE_IP     = local.talos_ips[count.index]
+      NODE_CONFIG = "${abspath(var.conf_dir)}/controlplane.yaml"
+    }
+  }
 
 #   depends_on = [local_file.controlplane_config, local_file.worker_config]
-# }
+  depends_on = [local_file.controlplane_config]
+}
 
 # Wait until Talos cluster nodes (controlplane or worker) are configured
 # resource "time_sleep" "os_install_wait" {

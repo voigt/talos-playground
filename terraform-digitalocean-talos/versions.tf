@@ -32,5 +32,3 @@ terraform {
     }
   }
 }
-
-provider "digitalocean" {}

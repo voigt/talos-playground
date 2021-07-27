@@ -1,3 +1,59 @@
+variable "control_plane_count" {
+  description = "The number of Talos control plane nodes"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.control_plane_count > 0
+    error_message = "Number of control plane nodes must be greater than 0."
+  }
+}
+variable "controlplane_nodes" {
+  description = "The number of Talos control plane nodes"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.controlplane_nodes > 0
+    error_message = "Number of control plane nodes must be greater than 0."
+  }
+}
+
+variable "controlplane_instance_size" {
+  description = "Controlplane instance size."
+  type        = string
+  default     = "s-2vcpu-4gb"
+
+  validation {
+    condition     = var.controlplane_instance_size != ""
+    error_message = "Controlplane instance size must not be empty."
+  }
+}
+
+variable "worker_instance_size" {
+  description = "Worker instance size."
+  type        = string
+  default     = "s-2vcpu-4gb"
+
+  validation {
+    condition     = var.worker_instance_size != ""
+    error_message = "Worker instance size must not be empty."
+  }
+}
+
+variable "talos_image_id" {
+  default = "88665004"
+}
+
+variable "region" {
+  default = "fra1"
+}
+
+variable "ssh_keys" {
+  default = []
+}
+
+# Keep
 # variable "controlplane_nodes" {
 #   description = "The list of Talos control plane nodes (either 1 or 3 nodes); the first node is used for initializing the cluster"
 #   type        = list(string)
@@ -9,55 +65,27 @@
 #   }
 # }
 
-# variable "controlplane_specs" {
-#   description = "The VirtualBox VM specs used for building Talos cluster's control plane nodes (default is 2 CPU, 2GB RAM, and 8GB disk)"
-#   type = object({
-#     cpus      = number
-#     ram_size  = number
-#     disk_size = number
-#   })
-#   default = {
-#     cpus      = 2
-#     ram_size  = 2048
-#     disk_size = 8000
-#   }
-# }
+variable "worker_nodes" {
+  description = "The list of Talos worker nodes (minimum is 0 nodes); the maximum depends on availability of host resources"
+  type        = list(string)
+  default     = []
 
-# variable "worker_nodes" {
-#   description = "The list of Talos worker nodes (minimum is 0 nodes); the maximum depends on availability of host resources"
-#   type        = list(string)
-#   default     = []
+  validation {
+    condition     = length(var.worker_nodes) >= 0
+    error_message = "Number of worker nodes must be zero or more."
+  }
+}
 
-#   validation {
-#     condition     = length(var.worker_nodes) >= 0
-#     error_message = "Number of worker nodes must be zero or more."
-#   }
-# }
+variable "talos_version" {
+  description = "The version of Talos OS, used for building the cluster; the version string should start with 'v'"
+  type        = string
+  default     = ""
 
-# variable "worker_specs" {
-#   description = "The VirtualBox VM specs used for building Talos cluster's worker nodes (default is 2 CPU, 2GB RAM, and 8GB disk)"
-#   type = object({
-#     cpus      = number
-#     ram_size  = number
-#     disk_size = number
-#   })
-#   default = {
-#     cpus      = 2
-#     ram_size  = 2048
-#     disk_size = 8000
-#   }
-# }
-
-# variable "talos_version" {
-#   description = "The version of Talos OS, used for building the cluster; the version string should start with 'v'"
-#   type        = string
-#   default     = ""
-
-#   validation {
-#     condition     = var.talos_version != "" && substr(var.talos_version, 0, 1) == "v"
-#     error_message = "The specified Talos version is invalid."
-#   }
-# }
+  validation {
+    condition     = var.talos_version != "" && substr(var.talos_version, 0, 1) == "v"
+    error_message = "The specified Talos version is invalid."
+  }
+}
 
 # variable "talos_cli_update" {
 #   description = "Whether Talos CLI (talosctl) should be installed/updated or not, for the specified Talos version (default is true)"
@@ -65,50 +93,61 @@
 #   default     = true
 # }
 
-# variable "kube_version" {
-#   description = "The version of Kubernetes (e.g. 1.20); default is the latest version supported by the selected Talos version"
-#   type        = string
-#   default     = ""
-# }
+variable "kube_version" {
+  description = "The version of Kubernetes (e.g. 1.20); default is the latest version supported by the selected Talos version"
+  type        = string
+  default     = ""
+}
 
-# variable "kube_cluster_name" {
-#   description = "The Kubernetes cluster name (default is talos)"
-#   type        = string
-#   default     = "talos"
+variable "kube_cluster_name" {
+  description = "The Kubernetes cluster name (default is talos)"
+  type        = string
+  default     = "talos"
 
-#   validation {
-#     condition     = var.kube_cluster_name != ""
-#     error_message = "The Kubernetes cluster name must be identified."
-#   }
-# }
+  validation {
+    condition     = var.kube_cluster_name != ""
+    error_message = "The Kubernetes cluster name must be identified."
+  }
+}
 
-# variable "kube_dns_domain" {
-#   description = "The Kubernetes cluster DNS domain (default is cluster.local)"
-#   type        = string
-#   default     = "cluster.local"
+variable "kube_dns_domain" {
+  description = "The Kubernetes cluster DNS domain (default is cluster.local)"
+  type        = string
+  default     = "cluster.local"
 
-#   validation {
-#     condition     = var.kube_dns_domain != ""
-#     error_message = "The Kubernetes cluster DNS domain must be identified."
-#   }
-# }
+  validation {
+    condition     = var.kube_dns_domain != ""
+    error_message = "The Kubernetes cluster DNS domain must be identified."
+  }
+}
 
-# variable "controlplane_scheduling" {
-#   description = "Whether the scheduling taint of the Talos cluster control plane nodes should be removed (default is false)"
-#   type        = bool
-#   default     = false
-# }
+variable "controlplane_scheduling" {
+  description = "Whether the scheduling taint of the Talos cluster control plane nodes should be removed (default is false)"
+  type        = bool
+  default     = false
+}
 
-# variable "apply_config_wait" {
-#   description = "Whether Talos CLI's apply-config should be applied sequentially, by a number of seconds; can ease pressure on host resources (default is 0s)"
-#   type        = number
-#   default     = 0
+variable "dns_domain" {
+  description = "The DNS domain for the hostonly network; usually the domain host is part of (default is example.com)"
+  type        = string
+  default     = "example.com"
 
-#   validation {
-#     condition     = var.apply_config_wait >= 0
-#     error_message = "The specified apply config wait time is invalid."
-#   }
-# }
+  validation {
+    condition     = var.dns_domain != ""
+    error_message = "The specified DNS domain is invalid, or is empty."
+  }
+}
+
+variable "apply_config_wait" {
+  description = "Whether Talos CLI's apply-config should be applied sequentially, by a number of seconds; can ease pressure on host resources (default is 0s)"
+  type        = number
+  default     = 500
+
+  validation {
+    condition     = var.apply_config_wait >= 0
+    error_message = "The specified apply config wait time is invalid."
+  }
+}
 
 # variable "os_installation_wait" {
 #   description = "How long Terraform should wait for OS installation; it's host resources, network bandwidth, and image caching dependent (default is 4m)"
