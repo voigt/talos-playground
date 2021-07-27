@@ -39,23 +39,23 @@ function gen_certs {
 function get_b64_strings {
   # The current directory, because of gen_certs function, is CONF_DIR
 	if (uname -a | grep 'Darwin' >/dev/null); then # Host is macOS
-    TALOS_CRT=$(base64 -i talos.crt)
-    TALOS_KEY=$(base64 -i talos.key)
-    KUBE_CRT=$(base64 -i kubernetes.crt)
-    KUBE_KEY=$(base64 -i kubernetes.key)
-    ETCD_CRT=$(base64 -i etcd.crt)
-    ETCD_KEY=$(base64 -i etcd.key)
-    ADMIN_CRT=$(base64 -i admin.crt)
-    ADMIN_KEY=$(base64 -i admin.key)
+    TALOS_CRT=$(base64 -i talos.crt | tr -d '\n')
+    TALOS_KEY=$(base64 -i talos.key | tr -d '\n')
+    KUBE_CRT=$(base64 -i kubernetes.crt | tr -d '\n')
+    KUBE_KEY=$(base64 -i kubernetes.key | tr -d '\n')
+    ETCD_CRT=$(base64 -i etcd.crt | tr -d '\n')
+    ETCD_KEY=$(base64 -i etcd.key | tr -d '\n')
+    ADMIN_CRT=$(base64 -i admin.crt | tr -d '\n')
+    ADMIN_KEY=$(base64 -i admin.key | tr -d '\n')
 	else # Host is Linux, as other platforms are not tested to be evaluated here
-    TALOS_CRT=$(base64 talos.crt)
-    TALOS_KEY=$(base64 talos.key)
-    KUBE_CRT=$(base64 kubernetes.crt)
-    KUBE_KEY=$(base64 kubernetes.key)
-    ETCD_CRT=$(base64 etcd.crt)
-    ETCD_KEY=$(base64 etcd.key)
-    ADMIN_CRT=$(base64 admin.crt)
-    ADMIN_KEY=$(base64 admin.key)
+    TALOS_CRT=$(base64 talos.crt | tr -d '\n'))
+    TALOS_KEY=$(base64 talos.key | tr -d '\n'))
+    KUBE_CRT=$(base64 kubernetes.crt | tr -d '\n'))
+    KUBE_KEY=$(base64 kubernetes.key | tr -d '\n'))
+    ETCD_CRT=$(base64 etcd.crt | tr -d '\n'))
+    ETCD_KEY=$(base64 etcd.key | tr -d '\n'))
+    ADMIN_CRT=$(base64 admin.crt | tr -d '\n'))
+    ADMIN_KEY=$(base64 admin.key | tr -d '\n'))
   fi
 
   # Delete certificate files
