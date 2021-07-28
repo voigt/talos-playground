@@ -30,6 +30,12 @@ function gen_certs {
   # Generate the etcd CA certificate (RSA 4096)
   talosctl gen ca --rsa --hours 87600 --organization etcd
 
+  # Generate the aggregator CA certificate (RSA 4096)
+  talosctl gen ca --rsa --hours 87600 --organization aggregator
+
+  # Generate ServiceAccount Key
+  talosctl gen key --name serviceaccount
+
   # Generate the Talos admin certificate (Ed25519)
   talosctl gen key --name admin
   talosctl gen csr --ip "127.0.0.1" --key admin.key
@@ -47,6 +53,9 @@ function get_b64_strings {
     ETCD_KEY=$(base64 -i etcd.key | tr -d '\n')
     ADMIN_CRT=$(base64 -i admin.crt | tr -d '\n')
     ADMIN_KEY=$(base64 -i admin.key | tr -d '\n')
+    AGGREGATOR_CRT=$(base64 -i aggregator.crt | tr -d '\n')
+    AGGREGATOR_KEY=$(base64 -i aggregator.key | tr -d '\n')
+    SA_KEY=$(base64 -i serviceaccount.key | tr -d '\n')
 	else # Host is Linux, as other platforms are not tested to be evaluated here
     TALOS_CRT=$(base64 talos.crt | tr -d '\n')
     TALOS_KEY=$(base64 talos.key | tr -d '\n')
@@ -56,6 +65,9 @@ function get_b64_strings {
     ETCD_KEY=$(base64 etcd.key | tr -d '\n')
     ADMIN_CRT=$(base64 admin.crt | tr -d '\n')
     ADMIN_KEY=$(base64 admin.key | tr -d '\n')
+    AGGREGATOR_CRT=$(base64 aggregator.crt | tr -d '\n')
+    AGGREGATOR_KEY=$(base64 aggregator.key | tr -d '\n')
+    SA_KEY=$(base64 serviceaccount.key | tr -d '\n')
   fi
 
   # Delete certificate files
@@ -71,7 +83,10 @@ function get_b64_strings {
     --arg etcd_key "${ETCD_KEY}" \
     --arg admin_crt "${ADMIN_CRT}" \
     --arg admin_key "${ADMIN_KEY}" \
-    '{"host_arch": ($host_arch), "talos_crt": ($talos_crt), "talos_key": ($talos_key), "kube_crt": ($kube_crt), "kube_key": ($kube_key), "etcd_crt": ($etcd_crt), "etcd_key": ($etcd_key), "admin_crt": ($admin_crt), "admin_key": ($admin_key)}'
+    --arg aggregator_crt "${AGGREGATOR_CRT}" \
+    --arg aggregator_key "${AGGREGATOR_KEY}" \
+    --arg sa_key "${SA_KEY}" \
+    '{"host_arch": ($host_arch), "talos_crt": ($talos_crt), "talos_key": ($talos_key), "kube_crt": ($kube_crt), "kube_key": ($kube_key), "etcd_crt": ($etcd_crt), "etcd_key": ($etcd_key), "admin_crt": ($admin_crt), "admin_key": ($admin_key), "aggregator_crt": ($aggregator_crt), "aggregator_key": ($aggregator_key), "sa_key": ($sa_key)}'
 }
 
 check_deps &&
