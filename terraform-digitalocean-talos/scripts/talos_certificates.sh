@@ -34,7 +34,7 @@ function gen_certs {
   talosctl gen ca --rsa --hours 87600 --organization aggregator
 
   # Generate ServiceAccount Key
-  talosctl gen key --name serviceaccount
+  openssl ecparam -name prime256v1 -genkey -noout -out sa.pem
 
   # Generate the Talos admin certificate (Ed25519)
   talosctl gen key --name admin
@@ -55,7 +55,7 @@ function get_b64_strings {
     ADMIN_KEY=$(base64 -i admin.key | tr -d '\n')
     AGGREGATOR_CRT=$(base64 -i aggregator.crt | tr -d '\n')
     AGGREGATOR_KEY=$(base64 -i aggregator.key | tr -d '\n')
-    SA_KEY=$(base64 -i serviceaccount.key | tr -d '\n')
+    SA_KEY=$(base64 -i sa.pem | tr -d '\n')
 	else # Host is Linux, as other platforms are not tested to be evaluated here
     TALOS_CRT=$(base64 talos.crt | tr -d '\n')
     TALOS_KEY=$(base64 talos.key | tr -d '\n')
@@ -67,7 +67,7 @@ function get_b64_strings {
     ADMIN_KEY=$(base64 admin.key | tr -d '\n')
     AGGREGATOR_CRT=$(base64 aggregator.crt | tr -d '\n')
     AGGREGATOR_KEY=$(base64 aggregator.key | tr -d '\n')
-    SA_KEY=$(base64 serviceaccount.key | tr -d '\n')
+    SA_KEY=$(base64 sa.pem | tr -d '\n')
   fi
 
   # Delete certificate files

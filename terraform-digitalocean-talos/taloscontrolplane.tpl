@@ -255,6 +255,7 @@ cluster:
     # The base64 encoded private key for service account token generation.
     serviceAccount:
         key: ${tf_sa_ca_key}
+        # key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUhvbFBuUUJSRFA3UmxHa2FjTldOdzlwRzFyWHZTbEw0TUhhWXJ3SnpJbzJvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFUHI3N25rUTZ2eGNVd3ZOMEZrT2Z3V0E2UUwzZVBQYnlvSm5nV3E5RVVkVGhBaHJHaVBZOQpBeDF5L2tOZTN5ZXNtcmtEbnEyNHJzMTcyKzBxRXVsOXBBPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
     # API server specific configuration options.
     apiServer:
 %{if tf_kube_version != "" ~}
