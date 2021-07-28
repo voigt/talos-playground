@@ -49,11 +49,10 @@ module "controlplane_vms" {
   instance_size   = var.controlplane_instance_size
   talos_image_id  = var.talos_image_id
   region = var.region
-  # controlplane_config = "${file("${abspath(var.conf_dir)}/controlplane.yaml")}"
-  controlplane_config = "${file("/Users/cvoigt/git/github/voigt/talos/terraform-digitalocean-talos/tmp/controlplane.yaml")}"
+  controlplane_config = module.controlplane_config.stdout
   ssh_keys = var.ssh_keys
 
-  depends_on = [local_file.controlplane_config]
+  depends_on = [local_file.controlplane_config, module.controlplane_config]
 
   # TODO: Tags
   #tags = ["control-plane", "master", "reply", "test", "talos"]
@@ -95,6 +94,9 @@ resource "local_file" "controlplane_config" {
     tf_kube_ca_key      = data.external.talos_certificates.result.kube_key
     tf_etcd_ca_crt      = data.external.talos_certificates.result.etcd_crt
     tf_etcd_ca_key      = data.external.talos_certificates.result.etcd_key
+    tf_aggregator_ca_crt = data.external.talos_certificates.result.aggregator_crt
+    tf_aggregator_ca_key = data.external.talos_certificates.result.aggregator_key
+    tf_sa_ca_key = data.external.talos_certificates.result.sa_key
     tf_allow_scheduling = var.controlplane_scheduling
   })
   filename = "${abspath(var.conf_dir)}/controlplane.yaml"
@@ -111,8 +113,7 @@ resource "null_resource" "os_install" {
   provisioner "local-exec" {
     interpreter = [var.shell, "-c"]
     command     = <<-EOT
-      sleep $APPLY_PAUSE && \
-      talosctl apply-config --insecure --nodes $NODE_IP --file $NODE_CONFIG
+      sleep 300 && talosctl apply-config --insecure --nodes $NODE_IP --file $NODE_CONFIG
     EOT
 
     environment = {
@@ -124,6 +125,15 @@ resource "null_resource" "os_install" {
 
 #   depends_on = [local_file.controlplane_config, local_file.worker_config]
   depends_on = [local_file.controlplane_config]
+}
+
+module "controlplane_config" {
+  source  = "matti/resource/shell"
+  command = "cat ${abspath(var.conf_dir)}/controlplane.yaml"
+
+  depends = [
+    local_file.controlplane_config,
+  ]
 }
 
 # Wait until Talos cluster nodes (controlplane or worker) are configured
