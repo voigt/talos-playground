@@ -48,3 +48,7 @@ variable "controlplane_instance_size" {
 variable "region" {
     default = "fra1"
 }
+
+variable "ssh_keys" {
+    default = []
+}

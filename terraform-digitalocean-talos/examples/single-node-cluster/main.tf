@@ -9,6 +9,7 @@ module "talos" {
   controlplane_instance_size = var.controlplane_instance_size
   region                     = var.region
   talos_image_id             = var.talos_image_id
+  ssh_keys                   = var.ssh_keys
 
   source = "../../"
 }
