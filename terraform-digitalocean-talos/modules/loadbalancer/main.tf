@@ -28,5 +28,5 @@ resource "digitalocean_loadbalancer" "public" {
     unhealthy_threshold      = 3
   }
 
-  droplet_tag = "control-plane"
+  droplet_tag = var.droplet_tag
 }

@@ -51,11 +51,12 @@ module "controlplane_vms" {
   region              = var.region
   controlplane_config = module.controlplane_config.stdout
   ssh_keys            = var.ssh_keys
+  controlplane_tags   = ["control-plane", "master"]
 
-  depends_on          = [local_file.controlplane_config, module.controlplane_config]
-
-  # TODO: Tags
-  #tags = ["control-plane", "master", "reply", "test", "talos"]
+  depends_on          = [
+    local_file.controlplane_config,
+    module.controlplane_config
+  ]
 }
 
 # TODO: Launch Workers
@@ -74,6 +75,18 @@ resource "local_file" "talosconfig" {
   depends_on = [module.controlplane_vms, data.external.talos_certificates]
 }
 
+module "talos_loadbalancer" {
+  source = "./modules/loadbalancer"
+
+  name        = "talos-lb"
+  region      = var.region
+  droplet_tag = var.control_plane_tag
+}
+
+output "control_plane_loadbalancer_ip" {
+    value = module.talos_loadbalancer.loadbalancer_ip
+}
+
 # # Generate the Talos controlplane.yaml files
 resource "local_file" "controlplane_config" {
 
@@ -85,7 +98,8 @@ resource "local_file" "controlplane_config" {
     tf_host_arch         = data.external.talos_certificates.result.host_arch
     tf_kube_version      = var.kube_version
     tf_talos_version     = var.talos_version
-    tf_cluster_endpoint  = format("%s.%s", var.kube_cluster_name, var.dns_domain)
+    # tf_cluster_endpoint  = format("%s.%s", var.kube_cluster_name, var.dns_domain)
+    tf_cluster_endpoint  = module.talos_loadbalancer.loadbalancer_ip
     tf_cluster_name      = var.kube_cluster_name
     tf_kube_dns_domain   = var.kube_dns_domain
     tf_kube_token        = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
@@ -101,7 +115,12 @@ resource "local_file" "controlplane_config" {
   })
   filename   = "${abspath(var.conf_dir)}/controlplane.yaml"
 
-  depends_on = [data.external.talos_certificates, random_string.random_token, random_string.random_key]
+  depends_on = [
+    module.talos_loadbalancer,
+    data.external.talos_certificates,
+    random_string.random_token,
+    random_string.random_key
+  ]
 }
 
 # Generate the Talos worker.yaml files
@@ -113,18 +132,23 @@ resource "null_resource" "os_install" {
   provisioner "local-exec" {
     interpreter = [var.shell, "-c"]
     command     = <<-EOT
-      sleep 300 && talosctl apply-config --insecure --nodes $NODE_IP --file $NODE_CONFIG
+      sleep 180 && \
+      talosctl --talosconfig $TALOS_CONFIG config endpoint $NODE_IP && \
+      talosctl --talosconfig ../../tmp/talosconfig config node $NODE_IP && \
+      talosctl --talosconfig ../../tmp/talosconfig bootstrap
     EOT
 
     environment = {
       APPLY_PAUSE = var.apply_config_wait * count.index
       NODE_IP     = local.talos_ips[count.index]
       NODE_CONFIG = "${abspath(var.conf_dir)}/controlplane.yaml"
+      TALOS_CONFIG = "${abspath(var.conf_dir)}/talosconfig"
     }
   }
 
-#   depends_on = [local_file.controlplane_config, local_file.worker_config]
-  depends_on = [local_file.controlplane_config]
+  depends_on = [
+    local_file.controlplane_config
+  ]
 }
 
 module "controlplane_config" {

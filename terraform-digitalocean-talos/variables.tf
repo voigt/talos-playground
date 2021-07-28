@@ -53,6 +53,10 @@ variable "ssh_keys" {
   default = []
 }
 
+variable "control_plane_tag" {
+  default = "control-plane"
+}
+
 # Keep
 # variable "controlplane_nodes" {
 #   description = "The list of Talos control plane nodes (either 1 or 3 nodes); the first node is used for initializing the cluster"

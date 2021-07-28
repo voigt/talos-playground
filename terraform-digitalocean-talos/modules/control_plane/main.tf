@@ -16,5 +16,5 @@ resource "digitalocean_droplet" "master" {
   ssh_keys = var.ssh_keys
   user_data = var.controlplane_config
 
-  tags = ["control-plane", "master", "reply", "test", "talos"]
+  tags = var.controlplane_tags
 }
