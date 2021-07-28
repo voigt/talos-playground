@@ -224,7 +224,7 @@ machine:
 cluster:
     # Provides control plane specific configuration options.
     controlPlane:
-        endpoint: https://${tf_cluster_endpoint}:6443 # Endpoint is the canonical controlplane endpoint, which can be an IP address or a DNS hostname.
+        endpoint: https://${tf_cluster_endpoint}:443 # Endpoint is the canonical controlplane endpoint, which can be an IP address or a DNS hostname.
     clusterName: ${tf_cluster_name} # Configures the cluster's name.
     # Provides cluster specific network configuration options.
     network:
