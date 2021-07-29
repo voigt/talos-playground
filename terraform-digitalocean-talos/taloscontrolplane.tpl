@@ -237,11 +237,11 @@ cluster:
             - 10.96.0.0/12
         
         # # The CNI used.
-        # cni:
-        #     name: custom # Name of CNI to use.
-        #     # URLs containing manifests to apply for the CNI.
-        #     urls:
-        #         - https://raw.githubusercontent.com/cilium/cilium/v1.8/install/kubernetes/quick-install.yaml
+        cni:
+            name: custom # Name of CNI to use.
+            # URLs containing manifests to apply for the CNI.
+            urls:
+                - https://raw.githubusercontent.com/cilium/cilium/v1.9/install/kubernetes/quick-install.yaml
     token: ${tf_kube_token} # The [bootstrap token](https://kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/) used to join the cluster.
     aescbcEncryptionSecret: ${tf_kube_enc_key} # The key used for the [encryption of secret data at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/).
     # The base64 encoded root certificate authority used by Kubernetes.
