@@ -135,13 +135,14 @@ resource "null_resource" "os_install" {
       sleep 180 && \
       talosctl --talosconfig $TALOS_CONFIG config endpoint $NODE_IP && \
       talosctl --talosconfig ../../tmp/talosconfig config node $NODE_IP && \
-      talosctl --talosconfig ../../tmp/talosconfig bootstrap
+      if [ $INDEX -eq 0 ]; then talosctl --talosconfig ../../tmp/talosconfig bootstrap;fi
     EOT
 
     environment = {
-      APPLY_PAUSE = var.apply_config_wait * count.index
-      NODE_IP     = local.talos_ips[count.index]
-      NODE_CONFIG = "${abspath(var.conf_dir)}/controlplane.yaml"
+      APPLY_PAUSE  = var.apply_config_wait * count.index
+      INDEX        = count.index
+      NODE_IP      = local.talos_ips[count.index]
+      NODE_CONFIG  = "${abspath(var.conf_dir)}/controlplane.yaml"
       TALOS_CONFIG = "${abspath(var.conf_dir)}/talosconfig"
     }
   }
