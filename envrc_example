@@ -1,0 +1,6 @@
+export DIGITALOCEAN_ACCESS_TOKEN=
+export DIGITALOCEAN_CONTEXT="talos"
+export CLOUDFLARE_EMAIL=
+export CLOUDFLARE_API_KEY=
+export KUBECONFIG="$(pwd)/terraform-digitalocean-talos/tmp/kubeconfig"
+export TALOSCONFIG="$(pwd)/terraform-digitalocean-talos/tmp/talosconfig"
