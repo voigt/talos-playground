@@ -10,6 +10,7 @@
 
 .envrc
 talosctl
+theila
 
 controlplane.yaml
 join.yaml
