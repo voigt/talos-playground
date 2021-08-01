@@ -5,10 +5,6 @@ persist: true # Indicates whether to pull the machine config upon every boot.
 machine:
     type: ${tf_type} # Defines the role of the machine within the cluster.
     token: ${tf_talos_token} # The `token` is used by a machine to join the PKI of the cluster.
-    # The root certificate authority of the PKI.
-    ca:
-        crt: ${tf_talos_ca_crt}
-        key: ${tf_talos_ca_key}
     # Extra certificate subject alternative names for the machine's certificate.
     certSANs: []
     #   # Uncomment this to enable SANs.
@@ -225,7 +221,6 @@ cluster:
     # Provides control plane specific configuration options.
     controlPlane:
         endpoint: https://${tf_cluster_endpoint}:443 # Endpoint is the canonical controlplane endpoint, which can be an IP address or a DNS hostname.
-    clusterName: ${tf_cluster_name} # Configures the cluster's name.
     # Provides cluster specific network configuration options.
     network:
         dnsDomain: ${tf_kube_dns_domain} # The domain used by Kubernetes DNS.
@@ -243,36 +238,36 @@ cluster:
             urls:
                 - https://raw.githubusercontent.com/cilium/cilium/v1.9/install/kubernetes/quick-install.yaml
     token: ${tf_kube_token} # The [bootstrap token](https://kubernetes.io/docs/reference/access-authn-authz/bootstrap-tokens/) used to join the cluster.
-    aescbcEncryptionSecret: ${tf_kube_enc_key} # The key used for the [encryption of secret data at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/).
+    aescbcEncryptionSecret: "" # The key used for the [encryption of secret data at rest](https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/).
     # The base64 encoded root certificate authority used by Kubernetes.
     ca:
         crt: ${tf_kube_ca_crt}
-        key: ${tf_kube_ca_key}
+        key: ""
     # The base64 encoded aggregator certificate authority used by Kubernetes for front-proxy certificate generation.
-    aggregatorCA:
-        crt: ${tf_aggregator_ca_crt}
-        key: ${tf_aggregator_ca_key}
+    # aggregatorCA:
+    #     crt: ${tf_aggregator_ca_crt}
+    #     key: ${tf_aggregator_ca_key}
     # The base64 encoded private key for service account token generation.
-    serviceAccount:
-        key: ${tf_sa_ca_key}
+    # serviceAccount:
+    #     key: ${tf_sa_ca_key}
     # API server specific configuration options.
-    apiServer:
+    # apiServer:
 %{if tf_kube_version != "" ~}
-        image: k8s.gcr.io/kube-apiserver-${tf_host_arch}:${tf_kube_version}
+        # image: k8s.gcr.io/kube-apiserver-${tf_host_arch}:${tf_kube_version}
 %{endif ~}
         # Extra certificate subject alternative names for the API server's certificate.
-        certSANs:
-            - ${tf_cluster_endpoint}
+        # certSANs:
+            # - ${tf_cluster_endpoint}
         
         # # The container image used in the API server manifest.
         # image: k8s.gcr.io/kube-apiserver:v1.21.2
 
     # Controller manager server specific configuration options.
 %{if tf_kube_version != "" ~}
-    controllerManager:
-        image: k8s.gcr.io/kube-controller-manager-${tf_host_arch}:${tf_kube_version} # The container image used in the controller manager manifest.
+    # controllerManager:
+        # image: k8s.gcr.io/kube-controller-manager-${tf_host_arch}:${tf_kube_version} # The container image used in the controller manager manifest.
 %{else ~}
-    controllerManager: {}
+    # controllerManager: {}
 
     # # The container image used in the controller manager manifest.
     # image: k8s.gcr.io/kube-controller-manager:v1.21.2
@@ -280,40 +275,40 @@ cluster:
 
     # Kube-proxy server-specific configuration options
 %{if tf_kube_version != "" ~}
-    proxy:
-        image: k8s.gcr.io/kube-proxy-${tf_host_arch}:${tf_kube_version}
+    # proxy:
+        # image: k8s.gcr.io/kube-proxy-${tf_host_arch}:${tf_kube_version}
 %{else ~}
-    proxy: {}
+    # proxy: {}
     # # The container image used in the kube-proxy manifest.
     # image: k8s.gcr.io/kube-proxy:v1.21.2
 %{endif ~}
 
     # Scheduler server specific configuration options.
 %{if tf_kube_version != "" ~}
-    scheduler:
-        image: k8s.gcr.io/kube-scheduler-${tf_host_arch}:${tf_kube_version} # The container image used in the scheduler manifest.
+    # scheduler:
+        # image: k8s.gcr.io/kube-scheduler-${tf_host_arch}:${tf_kube_version} # The container image used in the scheduler manifest.
 %{else ~}
-    scheduler: {}
+    # scheduler: {}
     # # The container image used in the scheduler manifest.
     # image: k8s.gcr.io/kube-scheduler:v1.21.2
 %{endif ~}
 
     # Etcd specific configuration options.
-    etcd:
+    # etcd:
         # The `ca` is the root certificate authority of the PKI.
-        ca:
-            crt: ${tf_etcd_ca_crt}
-            key: ${tf_etcd_ca_key}
+        # ca:
+            # crt: ${tf_etcd_ca_crt}
+            # key: ${tf_etcd_ca_key}
         
         # # The container image used to create the etcd service.
         # image: gcr.io/etcd-development/etcd:v3.4.16
     # A list of urls that point to additional manifests.
-    extraManifests: []
+    # extraManifests: []
     #   - https://www.example.com/manifest1.yaml
     #   - https://www.example.com/manifest2.yaml
 
     # A list of inline Kubernetes manifests.
-    inlineManifests: []
+    # inlineManifests: []
     #   - name: namespace-ci # Name of the manifest.
     #     contents: |- # Manifest contents as a string.
     #       apiVersion: v1
@@ -342,5 +337,3 @@ cluster:
     # # Settings for admin kubeconfig generation.
     # adminKubeconfig:
     #     certLifetime: 1h0m0s # Admin kubeconfig certificate lifetime (default is 1 year).
-
-allowSchedulingOnMasters: ${tf_allow_scheduling}
