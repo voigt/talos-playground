@@ -14,7 +14,7 @@ resource "digitalocean_droplet" "master" {
   region = var.region
   private_networking = true
   ssh_keys = var.ssh_keys
-  user_data = var.controlplane_config
+  user_data = var.user_data
 
-  tags = var.controlplane_tags
+  tags = var.tags
 }

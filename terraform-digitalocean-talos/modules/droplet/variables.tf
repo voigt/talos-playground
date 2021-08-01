@@ -1,13 +1,14 @@
 variable "talos_image_id" {}
 variable "instance_size" {}
 variable "region" {}
-variable "controlplane_config" {}
+variable "user_data" {}
+variable "name" {}
 variable "ssh_keys" {
   default = []
 }
 
-variable "controlplane_tags" {
-  default = ["control-plane", "master"]
+variable "tags" {
+  default = []
 }
 
 variable "index" {

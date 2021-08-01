@@ -3,11 +3,13 @@ locals {
 }
 
 locals {
-#   talos_nodes = length(var.worker_nodes) > 0 ? concat(var.controlplane_nodes, var.worker_nodes) : var.controlplane_nodes
-  talos_nodes = module.controlplane_vms
-  # Terraform creates the VMs in parallel, and as a result, the order of returned VMs and IPs could be different from the input lists; so match IPs to input VM names
-#   talos_ips = length(var.worker_nodes) > 0 ? concat([for v in var.controlplane_nodes : module.controlplane_vms[v].vm_ip], [for v in var.worker_nodes : module.worker_vms[v].vm_ip]) : [for v in var.controlplane_nodes : module.controlplane_vms[v].vm_ip]
-  talos_ips = [for i, v in module.controlplane_vms : module.controlplane_vms[i].ipv4_address]
+  # talos_nodes = module.controlplane_vms
+  talos_nodes = length(module.controlplane_vms) > 0 ? concat(module.controlplane_vms, module.controlplane_vms) : module.controlplane_vms
+
+  talos_ips = length(module.controlplane_vms) > 0 ? concat(
+    [for i, v in module.controlplane_vms : module.controlplane_vms[i].ipv4_address], [for i, v in module.worker_vms : module.worker_vms[i].ipv4_address]
+    ) : [for i, v in module.controlplane_vms : module.controlplane_vms[i].ipv4_address]
+  # talos_ips = [for i, v in module.controlplane_vms : module.controlplane_vms[i].ipv4_address]
 
   depends_on = [module.controlplane_vms]
 }
@@ -41,17 +43,18 @@ resource "random_string" "random_key" {
 
 # TODO: Launch Control-Plane
 module "controlplane_vms" {
-  source              = "./modules/control_plane"
+  source              = "./modules/droplet"
 
   count               = var.controlplane_nodes
 
   index               = count.index
+  name                = "control-plane-${count.index+1}"
   instance_size       = var.controlplane_instance_size
   talos_image_id      = var.talos_image_id
   region              = var.region
-  controlplane_config = module.controlplane_config.stdout
+  user_data           = module.controlplane_config.stdout
   ssh_keys            = var.ssh_keys
-  controlplane_tags   = ["control-plane", "master"]
+  tags                = ["control-plane", "master"]
 
   depends_on          = [
     local_file.controlplane_config,
@@ -60,6 +63,26 @@ module "controlplane_vms" {
 }
 
 # TODO: Launch Workers
+module "worker_vms" {
+  source              = "./modules/droplet"
+
+  count               = var.controlplane_nodes
+
+  index               = count.index
+  name                = "worker-${count.index+1}"
+  instance_size       = var.worker_instance_size
+  talos_image_id      = var.talos_image_id
+  region              = var.region
+  user_data           = module.worker_config.stdout
+  ssh_keys            = var.ssh_keys
+  tags                = ["worker"]
+
+  depends_on          = [
+    local_file.worker_config,
+    module.worker_config,
+    module.controlplane_vms
+  ]
+}
 
 # Generate the talosconfig file
 resource "local_file" "talosconfig" {

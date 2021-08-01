@@ -1,13 +1,3 @@
-variable "control_plane_count" {
-  description = "The number of Talos control plane nodes"
-  type        = number
-  default     = 1
-
-  validation {
-    condition     = var.control_plane_count > 0
-    error_message = "Number of control plane nodes must be greater than 0."
-  }
-}
 variable "controlplane_nodes" {
   description = "The number of Talos control plane nodes"
   type        = number
@@ -27,6 +17,17 @@ variable "controlplane_instance_size" {
   validation {
     condition     = var.controlplane_instance_size != ""
     error_message = "Controlplane instance size must not be empty."
+  }
+}
+
+variable "worker_nodes" {
+  description = "The list of Talos worker nodes (minimum is 0 nodes); the maximum depends on availability of host resources"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.worker_nodes >= 0
+    error_message = "Number of worker nodes must be equal or greater than zero."
   }
 }
 
@@ -55,29 +56,6 @@ variable "ssh_keys" {
 
 variable "control_plane_tag" {
   default = "control-plane"
-}
-
-# Keep
-# variable "controlplane_nodes" {
-#   description = "The list of Talos control plane nodes (either 1 or 3 nodes); the first node is used for initializing the cluster"
-#   type        = list(string)
-#   default     = []
-
-#   validation {
-#     condition     = length(var.controlplane_nodes) == 1 || length(var.controlplane_nodes) == 3
-#     error_message = "Number of control plane nodes must be either one, or three (HA cluster)."
-#   }
-# }
-
-variable "worker_nodes" {
-  description = "The list of Talos worker nodes (minimum is 0 nodes); the maximum depends on availability of host resources"
-  type        = list(string)
-  default     = []
-
-  validation {
-    condition     = length(var.worker_nodes) >= 0
-    error_message = "Number of worker nodes must be zero or more."
-  }
 }
 
 variable "talos_version" {
