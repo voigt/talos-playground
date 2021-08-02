@@ -13,6 +13,10 @@ variable "controlplane_nodes" {
     default = 1
 }
 
+variable "worker_nodes" {
+    default = 1
+}
+
 variable "kube_cluster_name" {
     default = "capi"
 }

@@ -8,7 +8,7 @@ terraform {
 }
 
 resource "digitalocean_droplet" "master" {
-  name   = "control-plane-${var.index+1}"
+  name   = var.name
   size   = var.instance_size
   image  = var.talos_image_id
   region = var.region

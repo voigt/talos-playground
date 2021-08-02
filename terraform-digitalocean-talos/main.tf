@@ -1,5 +1,8 @@
 locals {
-  scripts_dir = "${path.module}/scripts"
+  scripts_dir     = "${path.module}/scripts"
+  tf_talos_token  = format("%s.%s", substr(random_string.random_token[0].result, 7, 6), substr(random_string.random_token[0].result, 17, 16))
+  tf_kube_token   = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
+  tf_kube_enc_key = base64encode(random_string.random_key[0].result)
 }
 
 locals {
@@ -78,9 +81,10 @@ module "worker_vms" {
   tags                = ["worker"]
 
   depends_on          = [
+    module.controlplane_config,
+    module.controlplane_vms,
     local_file.worker_config,
-    module.worker_config,
-    module.controlplane_vms
+    module.worker_config
   ]
 }
 
@@ -88,6 +92,7 @@ module "worker_vms" {
 resource "local_file" "talosconfig" {
   content = templatefile("${path.module}/talosconfig.tpl", {
     tf_cluster_name    = var.kube_cluster_name
+    # tf_endpoints       = [module.talos_loadbalancer.loadbalancer_ip]
     tf_endpoints       = slice(local.talos_ips, 0, length(module.controlplane_vms))
     tf_talos_ca_crt    = data.external.talos_certificates.result.talos_crt
     tf_talos_admin_crt = data.external.talos_certificates.result.admin_crt
@@ -95,7 +100,11 @@ resource "local_file" "talosconfig" {
   })
   filename = "${abspath(var.conf_dir)}/talosconfig"
 
-  depends_on = [module.controlplane_vms, data.external.talos_certificates]
+  depends_on = [
+    module.talos_loadbalancer,
+    module.controlplane_vms,
+    data.external.talos_certificates
+  ]
 }
 
 module "talos_loadbalancer" {
@@ -114,7 +123,7 @@ output "control_plane_loadbalancer_ip" {
 resource "local_file" "controlplane_config" {
 
   content = templatefile("${path.module}/taloscontrolplane.tpl", {
-    tf_talos_token       = format("%s.%s", substr(random_string.random_token[0].result, 7, 6), substr(random_string.random_token[0].result, 17, 16))
+    tf_talos_token       = local.tf_talos_token
     tf_type              = "controlplane"
     tf_talos_ca_crt      = data.external.talos_certificates.result.talos_crt
     tf_talos_ca_key      = data.external.talos_certificates.result.talos_key
@@ -125,8 +134,8 @@ resource "local_file" "controlplane_config" {
     tf_cluster_endpoint  = module.talos_loadbalancer.loadbalancer_ip
     tf_cluster_name      = var.kube_cluster_name
     tf_kube_dns_domain   = var.kube_dns_domain
-    tf_kube_token        = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
-    tf_kube_enc_key      = base64encode(random_string.random_key[0].result)
+    tf_kube_token        = local.tf_kube_token
+    tf_kube_enc_key      = local.tf_kube_enc_key
     tf_kube_ca_crt       = data.external.talos_certificates.result.kube_crt
     tf_kube_ca_key       = data.external.talos_certificates.result.kube_key
     tf_etcd_ca_crt       = data.external.talos_certificates.result.etcd_crt
@@ -150,7 +159,7 @@ resource "local_file" "controlplane_config" {
 resource "local_file" "worker_config" {
 
   content = templatefile("${path.module}/talosworker.tpl", {
-    tf_talos_token       = format("%s.%s", substr(random_string.random_token[0].result, 7, 6), substr(random_string.random_token[0].result, 17, 16))
+    tf_talos_token       = local.tf_talos_token
     tf_type              = "worker"
     tf_talos_ca_crt      = data.external.talos_certificates.result.talos_crt
     tf_talos_ca_key      = data.external.talos_certificates.result.talos_key
@@ -161,8 +170,8 @@ resource "local_file" "worker_config" {
     tf_cluster_endpoint  = module.talos_loadbalancer.loadbalancer_ip
     tf_cluster_name      = var.kube_cluster_name
     tf_kube_dns_domain   = var.kube_dns_domain
-    tf_kube_token        = format("%s.%s", substr(random_string.random_token[1].result, 5, 6), substr(random_string.random_token[1].result, 15, 16))
-    tf_kube_enc_key      = base64encode(random_string.random_key[0].result)
+    tf_kube_token        = local.tf_kube_token
+    tf_kube_enc_key      = local.tf_kube_enc_key
     tf_kube_ca_crt       = data.external.talos_certificates.result.kube_crt
     tf_kube_ca_key       = data.external.talos_certificates.result.kube_key
     tf_etcd_ca_crt       = data.external.talos_certificates.result.etcd_crt
@@ -184,28 +193,23 @@ resource "local_file" "worker_config" {
 
 # Provide the Talos configuration yaml files, to the newly booted up VirtualBox VMs
 resource "null_resource" "os_install" {
-  count = length(local.talos_nodes)
 
   provisioner "local-exec" {
     interpreter = [var.shell, "-c"]
     command     = <<-EOT
       sleep 180 && \
-      talosctl --talosconfig $TALOS_CONFIG config endpoint $NODE_IP && \
-      talosctl --talosconfig ../../tmp/talosconfig config node $NODE_IP && \
-      if [ $INDEX -eq 0 ]; then talosctl --talosconfig ../../tmp/talosconfig bootstrap;fi
+      talosctl --talosconfig $TALOS_CONFIG bootstrap
     EOT
 
     environment = {
-      APPLY_PAUSE  = var.apply_config_wait * count.index
-      INDEX        = count.index
-      NODE_IP      = local.talos_ips[count.index]
-      NODE_CONFIG  = "${abspath(var.conf_dir)}/controlplane.yaml"
       TALOS_CONFIG = "${abspath(var.conf_dir)}/talosconfig"
     }
   }
 
   depends_on = [
-    local_file.controlplane_config
+    local_file.controlplane_config,
+    module.controlplane_config,
+    module.controlplane_vms,
   ]
 }
 
@@ -215,6 +219,15 @@ module "controlplane_config" {
 
   depends = [
     local_file.controlplane_config,
+  ]
+}
+
+module "worker_config" {
+  source  = "matti/resource/shell"
+  command = "cat ${abspath(var.conf_dir)}/worker.yaml"
+
+  depends = [
+    local_file.worker_config,
   ]
 }
 
