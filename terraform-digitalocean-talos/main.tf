@@ -110,7 +110,7 @@ resource "local_file" "talosconfig" {
 module "talos_loadbalancer" {
   source = "./modules/loadbalancer"
 
-  name        = "talos-lb"
+  name        = "${var.kube_cluster_name}-lb"
   region      = var.region
   droplet_tag = var.control_plane_tag
 }
